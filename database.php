@@ -34,6 +34,15 @@ const WORK_FIELDS = [
     'had_dip', 'dip_action', 'returned_to_work', 'distraction_reason', 'work_stop_reason',
 ];
 
+// Колонки, которые добавляет миграция (только ADD COLUMN).
+const SCHEMA_ADD_COLUMNS = [
+    'future_work' => 'INTEGER',
+    'future_work_hours' => 'REAL',
+    'future_work_note' => 'TEXT',
+    'future_work_importance' => 'INTEGER',
+    'dayoff_worked' => 'INTEGER',
+];
+
 function db(): PDO
 {
     static $pdo = null;
@@ -92,33 +101,48 @@ function init_schema(PDO $pdo): void
         )'
     );
 
-    migrate_schema($pdo);
+    // Авто-миграция отключена: схема обновляется вручную через /migrate.
 }
 
-// Безопасная аддитивная миграция: только ADD COLUMN, с бэкапом БД до изменений.
-function migrate_schema(PDO $pdo): void
+// Имена существующих колонок таблицы days.
+function schema_columns(PDO $pdo): array
 {
-    $want = [
-        'future_work' => 'INTEGER',
-        'future_work_hours' => 'REAL',
-        'future_work_note' => 'TEXT',
-        'future_work_importance' => 'INTEGER',
-        'dayoff_worked' => 'INTEGER',
-    ];
-
-    $have = [];
+    $cols = [];
     foreach ($pdo->query('PRAGMA table_info(days)') as $col) {
-        $have[$col['name']] = true;
+        $cols[] = $col['name'];
     }
+    return $cols;
+}
 
+// Каких колонок из SCHEMA_ADD_COLUMNS не хватает (read-only).
+function missing_columns(PDO $pdo): array
+{
+    $have = array_flip(schema_columns($pdo));
     $missing = [];
-    foreach ($want as $col => $type) {
+    foreach (SCHEMA_ADD_COLUMNS as $col => $type) {
         if (!isset($have[$col])) {
             $missing[$col] = $type;
         }
     }
+    return $missing;
+}
+
+// Баннер «БД изменилась» для страницы «Сегодня» (пусто, если миграция не нужна).
+function migration_banner(): string
+{
+    if (!missing_columns(db())) {
+        return '';
+    }
+    return '<div class="alert warn">База данных изменилась. <a href="' . BASE_URL . '/migrate">Выполнить миграцию</a>.</div>';
+}
+
+// Безопасная аддитивная миграция: только ADD COLUMN, с бэкапом БД до изменений.
+// Вызывается вручную со страницы /migrate.
+function migrate_schema(PDO $pdo): array
+{
+    $missing = missing_columns($pdo);
     if (!$missing) {
-        return;
+        return ['status' => 'up-to-date', 'missing' => [], 'added' => [], 'backup' => null, 'reason' => null];
     }
 
     // Бэкап ПЕРЕД миграцией. Без бэкапа не мигрируем (fail-safe).
@@ -131,7 +155,7 @@ function migrate_schema(PDO $pdo): void
             'reason' => 'backup failed',
             'missing' => array_keys($missing),
         ]);
-        return;
+        return ['status' => 'aborted', 'reason' => 'backup failed', 'missing' => array_keys($missing), 'added' => [], 'backup' => null];
     }
 
     $added = [];
@@ -147,6 +171,8 @@ function migrate_schema(PDO $pdo): void
         'added' => $added,
         'backup' => $backup,
     ]);
+
+    return ['status' => 'ok', 'added' => $added, 'backup' => $backup, 'missing' => array_keys($missing), 'reason' => null];
 }
 
 function backup_db(): ?string

@@ -68,6 +68,10 @@ input:disabled,select:disabled,textarea:disabled{background:#f6f7f8;color:#4a505
 .alert.error{background:#fdeceb;color:#9c2b23;border:1px solid #f5c6c2}
 .alert.success{background:#eaf7f0;color:#1c6b46;border:1px solid #bfe3cf}
 .alert.info{background:#eef4fb;color:#1f5182;border:1px solid #c6ddf3}
+.alert.warn{background:#fdf6e3;color:#8a6d1a;border:1px solid #f0e2b6}
+.alert a{color:inherit;font-weight:650}
+.alert.nomargin{margin:0}
+.migrate-form{margin-top:16px}
 .alert ul{margin:8px 0 0;padding-left:18px}
 table{width:100%;border-collapse:collapse;min-width:760px}
 th,td{padding:13px 15px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}

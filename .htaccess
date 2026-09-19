@@ -20,6 +20,7 @@ RewriteRule ^export/?$ export.php [L]
 RewriteRule ^login/?$ login.php [L]
 RewriteRule ^logout/?$ logout.php [L]
 RewriteRule ^settings/?$ set_password.php [L]
+RewriteRule ^migrate/?$ migrate.php [L]
 RewriteRule ^day/([0-9]{4}-[0-9]{2}-[0-9]{2})/?$ index.php?date=$1 [L,QSA]
 
 # --- Главная ---

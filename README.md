@@ -28,6 +28,7 @@ work-rhythm/
 ├── analytics.php      # Аналитика + корреляции
 ├── export.php         # CSV-экспорт
 ├── login.php / logout.php / set_password.php  # Вход, выход, /settings
+├── migrate.php        # /migrate — ручная миграция схемы БД + бэкапы
 ├── config.php         # Пути, auth-секрет, логгер, asset(), ico()
 ├── database.php       # Схема days, normalize/validate, бэкап + миграция
 ├── auth.php           # Подписанный токен, require_login()
@@ -63,6 +64,8 @@ php -S localhost:8000 -t .
    php set_password.php <новый-пароль>
    ```
 4. Заполни «Сегодня» → «Завершить день».
+
+> Обновился с прошлой версии? Если на странице «Сегодня» появился баннер «База данных изменилась», открой `/migrate` и выполни миграцию (перед изменениями автоматически создаётся бэкап). Авто-миграции нет — схема обновляется только вручную.
 
 База `data/tracker.sqlite` и секрет `data/auth_secret.txt` создадутся сами при первом запуске.
 

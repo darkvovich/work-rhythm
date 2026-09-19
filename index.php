@@ -220,6 +220,7 @@ $active = 'day';
 </aside>
 
 <main>
+<?= migration_banner() ?>
 <div class="top">
   <div>
     <h1>Дневник</h1>
