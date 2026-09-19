@@ -1,0 +1,37 @@
+# --- Productivity Tracker: sensitive runtime data, never publish ---
+# SQLite database with personal diary entries
+/data/tracker.sqlite
+/data/*.sqlite
+/data/*.sqlite3
+/data/*.db
+/data/*.db-journal
+/data/*.db-wal
+/data/*.db-shm
+
+# Auth secrets (bcrypt hash + cookie signing secret)
+# see config.php: password_hash.txt, auth_secret.txt
+/data/password_hash.txt
+/data/password_hash.php
+/data/auth_secret.txt
+
+# Automatic DB backups (database.php: backup_db)
+/data/backups/
+
+# Runtime logs (config.php: write_log)
+/logs/*.log
+
+# CSV exports with personal data (export.php downloads, just in case saved locally)
+*.csv
+work_rhythm_export_*.csv
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+*.bak
+*.old
+*~
+
+# Keep tracked on purpose (do NOT ignore):
+#   data/.htaccess
+#   data/README.txt
+#   logs/.htaccess

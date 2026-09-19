@@ -1,0 +1,9 @@
+# Enforce LF everywhere (no CRLF). Overrides core.autocrlf on Windows.
+* text=auto eol=lf
+
+# Binaries must not be touched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

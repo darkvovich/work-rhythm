@@ -1,0 +1,2 @@
+# Запрет доступа к логам из браузера (Apache 2.4+)
+Require all denied

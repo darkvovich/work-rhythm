@@ -1,0 +1,26 @@
+Options -Indexes
+RewriteEngine On
+
+# --- Защита базы данных, логов и служебных файлов ---
+RewriteRule ^data/ - [F,L]
+RewriteRule ^logs/ - [F,L]
+RewriteRule \.sqlite$ - [F,L]
+RewriteRule ^(config|database|auth)\.php$ - [F,L]
+
+# --- API (ЧПУ) ---
+RewriteRule ^api/save-day/?$ api/save_day.php [L,QSA]
+RewriteRule ^api/complete-day/?$ api/complete_day.php [L,QSA]
+RewriteRule ^api/get-day/?$ api/get_day.php [L,QSA]
+RewriteRule ^api/get-history/?$ api/get_history.php [L,QSA]
+
+# --- Страницы (ЧПУ) ---
+RewriteRule ^history/?$ history.php [L]
+RewriteRule ^analytics/?$ analytics.php [L]
+RewriteRule ^export/?$ export.php [L]
+RewriteRule ^login/?$ login.php [L]
+RewriteRule ^logout/?$ logout.php [L]
+RewriteRule ^settings/?$ set_password.php [L]
+RewriteRule ^day/([0-9]{4}-[0-9]{2}-[0-9]{2})/?$ index.php?date=$1 [L,QSA]
+
+# --- Главная ---
+RewriteRule ^$ index.php [L]
