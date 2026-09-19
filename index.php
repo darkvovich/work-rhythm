@@ -93,7 +93,7 @@ function title_html(string $label, array $tip = []): string
 {
     $t = '';
     if ($tip) {
-        $t .= '<span class="info" tabindex="0" role="button" aria-label="Подсказка">i</span>';
+        $t .= '<span class="hint" tabindex="0" role="button" aria-label="Подсказка">i</span>';
         $t .= '<span class="tip-pop">';
         $t .= '<span class="tip-q">' . htmlspecialchars($tip['q']) . '</span>';
         foreach ([1, 3, 5] as $k) {

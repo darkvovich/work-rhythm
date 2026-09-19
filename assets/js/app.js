@@ -16,19 +16,19 @@ function postJSON(url, data) {
 
 // Подсказки к шкалам (ⓘ): открытие по клику, закрытие по клику вне / Escape.
 document.addEventListener('click', function (e) {
-  var info = e.target && e.target.closest ? e.target.closest('.info') : null;
-  if (info) {
+  var hint = e.target && e.target.closest ? e.target.closest('.hint') : null;
+  if (hint) {
     e.preventDefault();
-    var wasOpen = info.classList.contains('open');
-    document.querySelectorAll('.info.open').forEach(function (i) { i.classList.remove('open'); });
-    if (!wasOpen) info.classList.add('open');
+    var wasOpen = hint.classList.contains('open');
+    document.querySelectorAll('.hint.open').forEach(function (i) { i.classList.remove('open'); });
+    if (!wasOpen) hint.classList.add('open');
     return;
   }
-  document.querySelectorAll('.info.open').forEach(function (i) { i.classList.remove('open'); });
+  document.querySelectorAll('.hint.open').forEach(function (i) { i.classList.remove('open'); });
 });
 
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.info.open').forEach(function (i) { i.classList.remove('open'); });
+    document.querySelectorAll('.hint.open').forEach(function (i) { i.classList.remove('open'); });
   }
 });

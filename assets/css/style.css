@@ -38,10 +38,10 @@ h1{margin:0 0 5px;font-size:26px;letter-spacing:-.02em}
 .fields{padding:19px;display:grid;grid-template-columns:1fr 1fr;gap:19px}
 .full{grid-column:1/-1}
 label.title{display:block;font-weight:600;margin-bottom:8px;position:relative}
-.info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:6px;border-radius:50%;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;font-style:normal;cursor:pointer;vertical-align:middle;user-select:none}
-.info:hover{border-color:var(--muted);color:var(--text)}
+.hint{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:6px;border-radius:50%;border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;font-style:normal;cursor:pointer;vertical-align:middle;user-select:none}
+.hint:hover{border-color:var(--muted);color:var(--text)}
 .tip-pop{display:none;position:absolute;z-index:30;top:100%;left:0;margin-top:8px;width:min(380px,90vw);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px #0002;padding:12px 14px;font-weight:400;font-size:13px;line-height:1.5;color:var(--text);white-space:normal}
-.info.open+.tip-pop,.info:hover+.tip-pop{display:block}
+.hint.open+.tip-pop,.hint:hover+.tip-pop{display:block}
 .tip-q{display:block;font-weight:650;margin-bottom:6px}
 .tip-line{display:block;margin-top:3px}
 .tip-line b{display:inline-block;min-width:14px}
@@ -60,6 +60,7 @@ input:disabled,select:disabled,textarea:disabled{background:#f6f7f8;color:#4a505
 .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:350px}
 .scale span{width:100%;padding:0}
 .actions{position:sticky;bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 13px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:13px;box-shadow:0 8px 30px #00000010;backdrop-filter:blur(10px);margin-top:18px}
+.actions>div{display:flex;gap:10px}
 .btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:11px 15px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;font-size:15px;color:var(--text)}
 .btn:hover{background:#f4f5f7}
 .primary{background:var(--dark);color:#fff;border-color:var(--dark)}
