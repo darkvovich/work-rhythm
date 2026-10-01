@@ -50,11 +50,21 @@
     return String(h + m / 60);
   }
 
+  // Значение мультивыбора: все отмеченные чипсы через запятую.
+  function chipsValue(name) {
+    var vals = [];
+    form.querySelectorAll('input[name="' + name + '"]:checked').forEach(function (c) {
+      vals.push(c.value);
+    });
+    return vals.join(',');
+  }
+
   function collect() {
     var data = {};
     A.fields.forEach(function (f) {
       if (f === 'sleep_hours') data[f] = combinedSleep();
       else if (f === 'future_work_hours') data[f] = combinedFuture();
+      else if (f === 'exercise_type') data[f] = chipsValue(f);
       else data[f] = fieldValue(f);
     });
     // На плановом выходном часы работы берём из компактного блока.
@@ -66,9 +76,9 @@
   }
 
   function clearField(f) {
-    var radios = form.querySelectorAll('input[name="' + f + '"]');
-    if (radios.length && radios[0].type === 'radio') {
-      radios.forEach(function (r) { r.checked = false; });
+    var inputs = form.querySelectorAll('input[name="' + f + '"]');
+    if (inputs.length && (inputs[0].type === 'radio' || inputs[0].type === 'checkbox')) {
+      inputs.forEach(function (r) { r.checked = false; });
       return;
     }
     var el = form.querySelector('[name="' + f + '"]');
@@ -207,6 +217,19 @@
     errorBox.innerHTML = '<b>Не хватает данных:</b><ul>' +
       list.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>';
     errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Снятие «Завершён» (день становится черновиком). Навешивается до раннего
+  // выхода для read-only режима, иначе кнопка не заработает.
+  var reopenBtn = document.getElementById('reopen-btn');
+  if (reopenBtn) {
+    reopenBtn.addEventListener('click', function () {
+      if (!confirm('Редактировать завершённый день? Статус «Завершён» будет снят.')) return;
+      postJSON(A.base + '/api/reopen-day', { date: A.date }).then(function (j) {
+        if (j.ok) { location.reload(); }
+        else { alert(j.error || 'Не удалось открыть день для редактирования.'); }
+      }).catch(function () { alert('Не удалось открыть день для редактирования.'); });
+    });
   }
 
   if (A.readonly) {

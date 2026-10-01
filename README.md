@@ -6,7 +6,7 @@
 
 ## Возможности
 
-* **Сегодня (`/`)** — форма текущего дня: черновик, автосохранение (debounce), условные поля, кнопка «Завершить день». Завершённый день — read-only.
+* **Сегодня (`/`)** — форма текущего дня: черновик, автосохранение (debounce), условные поля, кнопка «Завершить день». Завершённый день — read-only, открыть его заново можно кнопкой «Редактировать».
 * **История (`/history`)** — таблица всех дней + просмотр дня по `/day/YYYY-MM-DD`.
 * **Аналитика (`/analytics`)** — средние, суммы и корреляции Пирсона (сон → энергия, энергия → результат и т.д.). Только корреляции, без заявлений о причинности. Графики — Chart.js с CDN.
 * **Экспорт (`/export`)** — весь дневник в CSV (`;`, UTF-8 с BOM).
@@ -35,6 +35,7 @@ work-rhythm/
 ├── api/
 │   ├── save_day.php      # POST {date, ...fields} → черновик
 │   ├── complete_day.php  # POST → проверка required_errors + completed
+│   ├── reopen_day.php     # POST → снять completed (день снова редактируем)
 │   ├── get_day.php       # GET ?date=
 │   └── get_history.php   # GET → все дни
 ├── assets/css/style.css
@@ -80,4 +81,5 @@ php -S localhost:8000 -t .
 
 * `POST api/save-day` — сохранить черновик. Неприменимые поля (условная логика) хранятся как `NULL`.
 * `POST api/complete-day` — валидация + `status=completed`.
+* `POST api/reopen-day` — снять «Завершён» (`status=draft`, `completed_at=NULL`), только для уже завершённого дня.
 * `GET api/get-day?date=YYYY-MM-DD`, `GET api/get-history` — чтение.

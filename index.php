@@ -117,6 +117,20 @@ function select_html(string $name, array $opts, array $day, bool $dis, string $p
     return $s . '</select>';
 }
 
+// Мультивыбор: чекбоксы в виде чипсов. Отмеченные значения хранятся
+// в exercise_type через запятую без пробела.
+function chips_html(string $name, array $opts, array $day, bool $dis): string
+{
+    $selected = (isset($day[$name]) && $day[$name] !== null) ? explode(',', (string) $day[$name]) : [];
+    $s = '<div class="choices">';
+    foreach ($opts as $v) {
+        $c = in_array($v, $selected, true) ? ' checked' : '';
+        $d = $dis ? ' disabled' : '';
+        $s .= '<label class="choice"><input type="checkbox" name="' . $name . '" value="' . htmlspecialchars($v) . '"' . $c . $d . '><span>' . htmlspecialchars($v) . '</span></label>';
+    }
+    return $s . '</div>';
+}
+
 $dayTypeOpts = ['work' => 'Рабочий день', 'day_off' => 'Выходной по плану'];
 $yesNoOpts = [1 => 'Да', 0 => 'Нет'];
 $timeOutsideOpts = [
@@ -132,7 +146,7 @@ $youtubeOpts = [
     '1_2' => '1–2 часа',
     'gt2' => 'Более 2 часов',
 ];
-$exerciseTypeOpts = ['Бег', 'Силовая', 'Йога', 'Велосипед', 'Плавание', 'Прогулка', 'Другое'];
+$exerciseTypeOpts = EXERCISE_TYPES;
 $dipActionOpts = ['Прогулка', 'Спорт', 'Отдых', 'YouTube', 'Другое'];
 $distractionOpts = ['Усталость', 'Тревога', 'Скука', 'YouTube', 'Сообщения', 'Другое'];
 $stopReasonOpts = ['План выполнен', 'Устал', 'Потерял концентрацию', 'Стало скучно', 'YouTube', 'Тревога — надо ещё работать', 'Спорт', 'Семья / друзья', 'Другое'];
@@ -241,7 +255,10 @@ $active = 'day';
 </div>
 
 <?php if (($day['status'] ?? null) === 'completed'): ?>
-  <div class="alert success">Этот день завершён и доступен только для просмотра.</div>
+  <div class="alert success">
+    Этот день завершён и доступен только для просмотра.
+    <button class="btn reopen-btn" type="button" id="reopen-btn">Редактировать</button>
+  </div>
 <?php elseif (!$isToday): ?>
   <div class="alert info">Вы заполняете прошедший день.</div>
 <?php endif; ?>
@@ -305,7 +322,7 @@ $active = 'day';
   <div class="sh"><h2>Спорт</h2><p>Была ли физическая нагрузка</p></div>
   <div class="fields">
     <div><label class="title">Был спорт?</label><?= choice_html('exercise', $yesNoOpts, $day, $readonly) ?></div>
-    <div data-show="exercise:1"><label class="title">Тип</label><?= select_html('exercise_type', $exerciseTypeOpts, $day, $readonly) ?></div>
+    <div data-show="exercise:1"><label class="title">Тип</label><?= chips_html('exercise_type', $exerciseTypeOpts, $day, $readonly) ?></div>
     <div data-show="exercise:1"><label class="title">Длительность, минут</label><?= input_html('exercise_duration', 'number', $day, $readonly, 'минут', '1') ?></div>
     <div data-show="exercise:1" class="full"><label class="title">Интенсивность</label><?= scale_html('exercise_intensity', $day, $readonly) ?></div>
   </div>

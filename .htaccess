@@ -10,6 +10,7 @@ RewriteRule ^(config|database|auth)\.php$ - [F,L]
 # --- API (ЧПУ) ---
 RewriteRule ^api/save-day/?$ api/save_day.php [L,QSA]
 RewriteRule ^api/complete-day/?$ api/complete_day.php [L,QSA]
+RewriteRule ^api/reopen-day/?$ api/reopen_day.php [L,QSA]
 RewriteRule ^api/get-day/?$ api/get_day.php [L,QSA]
 RewriteRule ^api/get-history/?$ api/get_history.php [L,QSA]
 

@@ -14,10 +14,13 @@ const INT_FIELDS = ['exercise_duration'];
 const TIME_FIELDS = ['bed_time', 'wake_time', 'work_start'];
 
 // Текстовые поля (свободный ввод).
-const TEXT_FIELDS = ['exercise_type', 'dip_action', 'distraction_reason', 'work_stop_reason', 'main_result', 'comment', 'future_work_note'];
+const TEXT_FIELDS = ['dip_action', 'distraction_reason', 'work_stop_reason', 'main_result', 'comment', 'future_work_note'];
 
 const TIME_OUTSIDE_VALUES = ['less_30', '30_60', '1_3', 'more_3'];
 const YOUTUBE_VALUES = ['none', 'lt30', '30_60', '1_2', 'gt2'];
+
+// Типы активностей (мультивыбор, хранятся в exercise_type через запятую без пробела).
+const EXERCISE_TYPES = ['Бег', 'Силовая', 'Йога', 'Велосипед', 'Плавание', 'Прогулка', 'Другое'];
 
 const EDITABLE_COLUMNS = [
     'day_type', 'bed_time', 'wake_time', 'sleep_hours', 'sleep_quality', 'morning_energy', 'day_readiness',
@@ -253,6 +256,13 @@ function mark_completed(string $date): void
         ->execute(['completed', date('Y-m-d H:i:s'), $date]);
 }
 
+// Снимает «Завершён»: день становится черновиком, снова редактируемым.
+function mark_reopened(string $date): void
+{
+    db()->prepare('UPDATE days SET status = ?, completed_at = NULL WHERE date = ?')
+        ->execute(['draft', $date]);
+}
+
 function scale_or_null($v): ?int
 {
     $i = filter_var($v, FILTER_VALIDATE_INT);
@@ -287,6 +297,21 @@ function time_or_null($v): ?string
     return preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $v) ? $v : null;
 }
 
+// Мультивыбор активностей: массив значений или строка «Бег,Йога» →
+// валидные значения, без дублей, через запятую. NULL — если ничего не выбрано.
+function exercise_type_or_null($v): ?string
+{
+    $vals = is_array($v) ? $v : explode(',', is_string($v) ? $v : '');
+    $out = [];
+    foreach ($vals as $item) {
+        if (!is_string($item)) continue;
+        $item = trim($item);
+        if (!in_array($item, EXERCISE_TYPES, true)) continue;
+        if (!in_array($item, $out, true)) $out[] = $item;
+    }
+    return $out ? implode(',', $out) : null;
+}
+
 function normalize_day(array $raw): array
 {
     $out = [];
@@ -306,6 +331,8 @@ function normalize_day(array $raw): array
         $out[$f] = is_string($v) ? trim($v) : null;
         if ($out[$f] === '') $out[$f] = null;
     }
+
+    $out['exercise_type'] = exercise_type_or_null($raw['exercise_type'] ?? null);
 
     return apply_conditional_clear($out);
 }
