@@ -392,7 +392,7 @@ function required_errors(array $day): array
         $err[] = 'Укажите ' . $labels['day_type'] . '.';
     }
 
-    foreach (['bed_time', 'wake_time', 'sleep_hours', 'sleep_quality', 'morning_energy', 'day_readiness', 'evening_energy', 'tomorrow_motivation'] as $f) {
+    foreach (['bed_time', 'wake_time', 'sleep_hours', 'sleep_quality', 'morning_energy', 'day_readiness'] as $f) {
         if (($day[$f] ?? null) === null || $day[$f] === '') {
             $err[] = 'Заполните: ' . $labels[$f];
         }

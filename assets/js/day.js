@@ -139,7 +139,7 @@
   }
 
   function requiredFields() {
-    var list = ['day_type', 'bed_time', 'wake_time', 'sleep_hours', 'sleep_quality', 'morning_energy', 'day_readiness', 'left_home', 'exercise', 'evening_energy', 'tomorrow_motivation'];
+    var list = ['day_type', 'bed_time', 'wake_time', 'sleep_hours', 'sleep_quality', 'morning_energy', 'day_readiness', 'left_home', 'exercise'];
     if (getRadio('day_type') === 'work') list.push('focused_work_hours', 'work_result');
     if (getRadio('left_home') === '1') list.push('time_outside');
     if (getRadio('exercise') === '1') list.push('exercise_type', 'exercise_duration', 'exercise_intensity');
