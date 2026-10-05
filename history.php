@@ -8,6 +8,12 @@ require_once __DIR__ . '/auth.php';
 require_login();
 
 $days = list_days();
+$totalDays = count($days);
+$completedDays = 0;
+foreach ($days as $d) {
+    if (($d['status'] ?? null) === 'completed') $completedDays++;
+}
+$draftDays = $totalDays - $completedDays;
 $active = 'history';
 ?>
 <!doctype html>
@@ -37,7 +43,7 @@ $active = 'history';
 
 <main>
 <div class="top">
-  <div><h1>История</h1><div class="muted">Все дни эксперимента</div></div>
+  <div><h1>История</h1><div class="muted">Все дни эксперимента</div><?php if ($days): ?><div class="muted">Всего дней: <?= $totalDays ?> · Завершено: <?= $completedDays ?> · Черновики: <?= $draftDays ?></div><?php endif; ?></div>
 </div>
 
 <?php if (!$days): ?>
@@ -47,6 +53,7 @@ $active = 'history';
 <table>
   <thead>
     <tr>
+      <th>№</th>
       <th>Дата</th>
       <th>Тип дня</th>
       <th>Сон</th>
@@ -60,8 +67,9 @@ $active = 'history';
     </tr>
   </thead>
   <tbody>
-  <?php foreach ($days as $d): ?>
+  <?php foreach ($days as $i => $d): ?>
     <tr>
+      <td><?= $totalDays - $i ?></td>
       <td><a href="<?= BASE_URL ?>/day/<?= htmlspecialchars($d['date']) ?>"><?= htmlspecialchars(fmt_date($d['date'])) ?></a></td>
       <td><?= htmlspecialchars(day_type_label($d['day_type'])) ?></td>
       <td><?= htmlspecialchars(fmt_hours($d['sleep_hours'])) ?><?= $d['sleep_quality'] ? ' · ' . $d['sleep_quality'] . '/5' : '' ?></td>
