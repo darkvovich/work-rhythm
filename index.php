@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
@@ -41,7 +42,10 @@ function split_hours($value): array
     $h = (float) $value;
     $whole = (int) floor($h);
     $mins = (int) round(($h - floor($h)) * 60);
-    if ($mins === 60) { $whole++; $mins = 0; }
+    if ($mins === 60) {
+        $whole++;
+        $mins = 0;
+    }
     return [(string) $whole, (string) $mins];
 }
 
@@ -210,219 +214,252 @@ $active = 'day';
 ?>
 <!doctype html>
 <html lang="ru">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Сегодня — Рабочий ритм</title>
-<link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/icon.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="<?= BASE_URL ?>/assets/favicon-32.png">
-<link rel="apple-touch-icon" href="<?= BASE_URL ?>/assets/apple-touch-icon.png">
-<link rel="manifest" href="<?= BASE_URL ?>/manifest.json">
-<meta name="theme-color" content="#20242b">
-<link rel="stylesheet" href="<?= asset('css/style.css') ?>">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Сегодня — Рабочий ритм</title>
+    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/icon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= BASE_URL ?>/assets/favicon-32.png">
+    <link rel="apple-touch-icon" href="<?= BASE_URL ?>/assets/apple-touch-icon.png">
+    <link rel="manifest" href="<?= BASE_URL ?>/manifest.json">
+    <meta name="theme-color" content="#20242b">
+    <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
+
 <body>
-<div class="app">
-<aside>
-  <div class="logo">Рабочий ритм</div>
-  <nav class="nav">
-    <a href="<?= BASE_URL ?>/" class="active"><?= ico('day') ?><span class="nav-label">Сегодня</span></a>
-    <a href="<?= BASE_URL ?>/history"><?= ico('history') ?><span class="nav-label">История</span></a>
-    <a href="<?= BASE_URL ?>/analytics"><?= ico('analytics') ?><span class="nav-label">Аналитика</span></a>
-    <a href="<?= BASE_URL ?>/export"><?= ico('export') ?><span class="nav-label">Экспорт</span></a>
-  </nav>
-</aside>
+    <div class="app">
+        <aside>
+            <div class="logo">Рабочий ритм</div>
+            <nav class="nav">
+                <a href="<?= BASE_URL ?>/" class="active"><?= ico('day') ?><span class="nav-label">Сегодня</span></a>
+                <a href="<?= BASE_URL ?>/history"><?= ico('history') ?><span class="nav-label">История</span></a>
+                <a href="<?= BASE_URL ?>/analytics"><?= ico('analytics') ?><span class="nav-label">Аналитика</span></a>
+                <a href="<?= BASE_URL ?>/export"><?= ico('export') ?><span class="nav-label">Экспорт</span></a>
+            </nav>
+        </aside>
 
-<main>
-<?= migration_banner() ?>
-<div class="top">
-  <div>
-    <h1>Дневник</h1>
-    <div class="muted"><?= htmlspecialchars(fmt_date_full($date)) ?></div>
-  </div>
-  <div class="top-right">
-    <div class="date">
-      <a class="date-btn" href="<?= BASE_URL ?>/day/<?= $prevDate ?>" title="Предыдущий день" aria-label="Предыдущий день">←</a>
-      <span><?= htmlspecialchars(fmt_date_short($date)) ?></span>
-      <?php if ($date < $today): ?>
-        <a class="date-btn" href="<?= BASE_URL ?>/day/<?= $nextDate ?>" title="Следующий день" aria-label="Следующий день">→</a>
-      <?php else: ?>
-        <button class="date-btn" disabled title="Сегодня" aria-label="Следующий день">→</button>
-      <?php endif; ?>
+        <main>
+            <?= migration_banner() ?>
+            <div class="top">
+                <div>
+                    <h1>Дневник</h1>
+                    <div class="muted"><?= htmlspecialchars(fmt_date_full($date)) ?></div>
+                </div>
+                <div class="top-right">
+                    <div class="date">
+                        <a class="date-btn" href="<?= BASE_URL ?>/day/<?= $prevDate ?>" title="Предыдущий день" aria-label="Предыдущий день">←</a>
+                        <span><?= htmlspecialchars(fmt_date_short($date)) ?></span>
+                        <?php if ($date < $today): ?>
+                            <a class="date-btn" href="<?= BASE_URL ?>/day/<?= $nextDate ?>" title="Следующий день" aria-label="Следующий день">→</a>
+                        <?php else: ?>
+                            <button class="date-btn" disabled title="Сегодня" aria-label="Следующий день">→</button>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (!$isToday): ?><a class="btn" href="<?= BASE_URL ?>/">Сегодня</a><?php endif; ?>
+                </div>
+            </div>
+
+            <?php if (($day['status'] ?? null) === 'completed'): ?>
+                <div class="alert success">
+                    Этот день завершён и доступен только для просмотра.
+                    <button class="btn reopen-btn" type="button" id="reopen-btn">Редактировать</button>
+                </div>
+            <?php elseif (!$isToday): ?>
+                <div class="alert info">Вы заполняете прошедший день.</div>
+            <?php endif; ?>
+
+            <?php if (!$readonly): ?>
+                <div class="progress">
+                    <div class="prow"><b>Заполнение дня</b><span class="muted" id="progress-label"></span></div>
+                    <div class="bar"><i id="progress-bar" style="width:0%"></i></div>
+                </div>
+            <?php endif; ?>
+
+            <form id="day-form" autocomplete="off" <?= $readonly ? 'class="readonly"' : '' ?>>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>Тип дня</h2>
+                        <p>Какой сегодня день?</p>
+                    </div>
+                    <div class="fields">
+                        <div class="full"><?= choice_html('day_type', $dayTypeOpts, $day, $readonly, false) ?></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>Сон</h2>
+                        <p>Как начался день</p>
+                    </div>
+                    <div class="fields">
+                        <div><label class="title">Во сколько лёг</label><?= input_html('bed_time', 'time', $day, $readonly) ?></div>
+                        <div><label class="title">Во сколько проснулся</label><?= input_html('wake_time', 'time', $day, $readonly) ?></div>
+                        <div>
+                            <label class="title">Сон по смарт-часам</label>
+                            <div class="sleep-inline">
+                                <div class="sleep-field">
+                                    <input type="number" name="sleep_hours" min="0" max="24" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($sleepHoursPart) ?>">
+                                    <span class="unit">часов</span>
+                                </div>
+                                <div class="sleep-field">
+                                    <input type="number" name="sleep_minutes" min="0" max="59" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($sleepMinutesPart) ?>">
+                                    <span class="unit">минут</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div><?= title_html('Качество сна', $tips['sleep_quality']) ?><?= scale_html('sleep_quality', $day, $readonly) ?></div>
+                        <div class="full sleep-calc" id="sleep-calc"></div>
+                        <div><?= title_html('Энергия утром', $tips['morning_energy']) ?><?= scale_html('morning_energy', $day, $readonly) ?></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>Состояние</h2>
+                        <p>Готовность к полноценному дню</p>
+                    </div>
+                    <div class="fields">
+                        <div class="full"><?= title_html('Готовность к дню', $tips['day_readiness']) ?><?= scale_html('day_readiness', $day, $readonly) ?></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>Выход из дома</h2>
+                        <p>Был ли вне дома и как долго</p>
+                    </div>
+                    <div class="fields">
+                        <div><label class="title">Выходил из дома?</label><?= choice_html('left_home', $yesNoOpts, $day, $readonly) ?></div>
+                        <div data-show="left_home:1"><label class="title">Время вне дома</label><?= choice_html('time_outside', $timeOutsideOpts, $day, $readonly) ?></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>Спорт</h2>
+                        <p>Была ли физическая нагрузка</p>
+                    </div>
+                    <div class="fields">
+                        <div><label class="title">Был спорт?</label><?= choice_html('exercise', $yesNoOpts, $day, $readonly) ?></div>
+                        <div data-show="exercise:1"><label class="title">Тип</label><?= chips_html('exercise_type', $exerciseTypeOpts, $day, $readonly) ?></div>
+                        <div data-show="exercise:1"><label class="title">Длительность, минут</label><?= input_html('exercise_duration', 'number', $day, $readonly, 'минут', '1') ?></div>
+                        <div data-show="exercise:1" class="full"><label class="title">Интенсивность</label><?= scale_html('exercise_intensity', $day, $readonly) ?></div>
+                    </div>
+                </div>
+
+                <div class="section" data-show="day_type:work">
+                    <div class="sh">
+                        <h2>Работа</h2>
+                        <p>Не только часы, но и результат</p>
+                    </div>
+                    <div class="fields">
+                        <div><label class="title">Время начала работы</label><?= input_html('work_start', 'time', $day, $readonly) ?></div>
+                        <div><label class="title">Сфокусированная работа, часов</label><?= input_html('focused_work_hours', 'number', $day, $readonly, 'часов', '0.25') ?></div>
+                        <div><label class="title">Общее рабочее время, часов</label><?= input_html('total_work_hours', 'number', $day, $readonly, 'часов', '0.25') ?></div>
+                        <div><?= title_html('Результативность работы', $tips['work_result']) ?><?= scale_html('work_result', $day, $readonly) ?></div>
+                        <div><?= title_html('Качество фокуса', $tips['focus_quality']) ?><?= scale_html('focus_quality', $day, $readonly) ?></div>
+                        <div><label class="title">YouTube / развлечения</label><?= choice_html('youtube_time', $youtubeOpts, $day, $readonly) ?></div>
+                    </div>
+                </div>
+
+                <div class="section" data-show="day_type:day_off">
+                    <div class="sh">
+                        <h2>Работа</h2>
+                        <p>На выходном тоже можно поработать</p>
+                    </div>
+                    <div class="fields">
+                        <div class="full"><label class="title">Работал сегодня?</label><?= choice_html('dayoff_worked', $yesNoOpts, $day, $readonly, false) ?></div>
+                        <div data-show="dayoff_worked:1"><label class="title">Сфокусированная работа, часов</label><?= input_html('dayoff_focused_hours', 'number', $day, $readonly, 'часов', '0.25', val($day, 'focused_work_hours')) ?></div>
+                        <div data-show="dayoff_worked:1"><label class="title">Общее рабочее время, часов</label><?= input_html('dayoff_total_hours', 'number', $day, $readonly, 'часов', '0.25', val($day, 'total_work_hours')) ?></div>
+                    </div>
+                </div>
+
+                <div class="section" data-show="day_type:work">
+                    <div class="sh">
+                        <h2>Спады и отвлечения</h2>
+                        <p>Что происходило, когда работать становилось тяжело</p>
+                    </div>
+                    <div class="fields">
+                        <div><label class="title">Был заметный спад?</label><?= choice_html('had_dip', $yesNoOpts, $day, $readonly) ?></div>
+                        <div data-show="had_dip:1"><label class="title">Что сделал при спаде?</label><?= select_html('dip_action', $dipActionOpts, $day, $readonly) ?></div>
+                        <div data-show="had_dip:1"><label class="title">Вернулся к работе?</label><?= choice_html('returned_to_work', $yesNoOpts, $day, $readonly) ?></div>
+                        <div class="full" data-show="had_dip:1"><label class="title">Почему отвлёкся?</label><?= select_html('distraction_reason', $distractionOpts, $day, $readonly) ?></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>🚀 Работа над будущим</h2>
+                        <p>Действия, которые потенциально улучшают твою жизнь в перспективе, а не просто закрывают текущие обязательства.</p>
+                    </div>
+                    <div class="fields">
+                        <div class="full"><label class="title">Занимался сегодня чем-то для будущего?</label><?= choice_html('future_work', $yesNoOpts, $day, $readonly, false) ?></div>
+                        <div data-show="future_work:1">
+                            <label class="title">Сколько времени?</label>
+                            <div class="sleep-inline">
+                                <div class="sleep-field">
+                                    <input type="number" name="future_work_hours" min="0" max="24" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($fwHoursPart) ?>">
+                                    <span class="unit">часов</span>
+                                </div>
+                                <div class="sleep-field">
+                                    <input type="number" name="future_work_minutes" min="0" max="59" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($fwMinutesPart) ?>">
+                                    <span class="unit">минут</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-show="future_work:1"><?= title_html('Насколько это было значимо для будущего?', $tips['future_work_importance']) ?><?= scale_html('future_work_importance', $day, $readonly) ?></div>
+                        <div class="full" data-show="future_work:1"><label class="title">Что делал?</label><?= input_html('future_work_note', 'text', $day, $readonly, 'Например: составлял финансовый план') ?></div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="sh">
+                        <h2>Вечер</h2>
+                        <p>Финальная оценка дня</p>
+                    </div>
+                    <div class="fields">
+                        <div><?= title_html('Энергия вечером', $tips['evening_energy']) ?><?= scale_html('evening_energy', $day, $readonly) ?></div>
+                        <div><?= title_html('Готовность работать завтра', $tips['tomorrow_motivation']) ?><?= scale_html('tomorrow_motivation', $day, $readonly) ?></div>
+                        <div data-show="day_type:work"><label class="title">Почему остановил работу?</label><?= select_html('work_stop_reason', $stopReasonOpts, $day, $readonly) ?></div>
+                        <div class="full"><label class="title">Главный результат дня</label><?= input_html('main_result', 'text', $day, $readonly, 'Одним предложением: что сегодня реально продвинул?') ?></div>
+                        <div class="full"><label class="title">Комментарий</label><textarea name="comment" placeholder="Что было необычного или что стоит учесть при анализе?" <?= $readonly ? 'disabled' : '' ?>><?= htmlspecialchars(val($day, 'comment')) ?></textarea></div>
+                    </div>
+                </div>
+
+                <?php if (!$readonly): ?>
+                    <div class="actions">
+                        <span class="muted" id="save-status">Ещё не сохранено</span>
+                        <div>
+                            <button class="btn" type="button" id="save-btn">Сохранить</button>
+                            <button class="btn primary" type="button" id="complete-btn">Завершить день</button>
+                        </div>
+                    </div>
+                    <div class="alert error hidden" id="error-box"></div>
+                <?php endif; ?>
+
+            </form>
+            <footer class="footer">
+                <a href="<?= BASE_URL ?>/settings">Смена пароля</a>
+                <a href="<?= BASE_URL ?>/logout">Выйти</a>
+            </footer>
+        </main>
     </div>
-    <?php if (!$isToday): ?><a class="btn" href="<?= BASE_URL ?>/">Сегодня</a><?php endif; ?>
-  </div>
-</div>
 
-<?php if (($day['status'] ?? null) === 'completed'): ?>
-  <div class="alert success">
-    Этот день завершён и доступен только для просмотра.
-    <button class="btn reopen-btn" type="button" id="reopen-btn">Редактировать</button>
-  </div>
-<?php elseif (!$isToday): ?>
-  <div class="alert info">Вы заполняете прошедший день.</div>
-<?php endif; ?>
-
-<?php if (!$readonly): ?>
-<div class="progress">
-  <div class="prow"><b>Заполнение дня</b><span class="muted" id="progress-label"></span></div>
-  <div class="bar"><i id="progress-bar" style="width:0%"></i></div>
-</div>
-<?php endif; ?>
-
-<form id="day-form" autocomplete="off" <?= $readonly ? 'class="readonly"' : '' ?>>
-
-<div class="section">
-  <div class="sh"><h2>Тип дня</h2><p>Какой сегодня день?</p></div>
-  <div class="fields">
-    <div class="full"><?= choice_html('day_type', $dayTypeOpts, $day, $readonly, false) ?></div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="sh"><h2>Сон</h2><p>Как начался день</p></div>
-  <div class="fields">
-    <div><label class="title">Во сколько лёг</label><?= input_html('bed_time', 'time', $day, $readonly) ?></div>
-    <div><label class="title">Во сколько проснулся</label><?= input_html('wake_time', 'time', $day, $readonly) ?></div>
-    <div>
-      <label class="title">Сон по смарт-часам</label>
-      <div class="sleep-inline">
-        <div class="sleep-field">
-          <input type="number" name="sleep_hours" min="0" max="24" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($sleepHoursPart) ?>">
-          <span class="unit">часов</span>
-        </div>
-        <div class="sleep-field">
-          <input type="number" name="sleep_minutes" min="0" max="59" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($sleepMinutesPart) ?>">
-          <span class="unit">минут</span>
-        </div>
-      </div>
-    </div>
-    <div><?= title_html('Качество сна', $tips['sleep_quality']) ?><?= scale_html('sleep_quality', $day, $readonly) ?></div>
-    <div class="full sleep-calc" id="sleep-calc"></div>
-    <div><?= title_html('Энергия утром', $tips['morning_energy']) ?><?= scale_html('morning_energy', $day, $readonly) ?></div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="sh"><h2>Состояние</h2><p>Готовность к полноценному дню</p></div>
-  <div class="fields">
-    <div class="full"><?= title_html('Готовность к дню', $tips['day_readiness']) ?><?= scale_html('day_readiness', $day, $readonly) ?></div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="sh"><h2>Выход из дома</h2><p>Был ли вне дома и как долго</p></div>
-  <div class="fields">
-    <div><label class="title">Выходил из дома?</label><?= choice_html('left_home', $yesNoOpts, $day, $readonly) ?></div>
-    <div data-show="left_home:1"><label class="title">Время вне дома</label><?= choice_html('time_outside', $timeOutsideOpts, $day, $readonly) ?></div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="sh"><h2>Спорт</h2><p>Была ли физическая нагрузка</p></div>
-  <div class="fields">
-    <div><label class="title">Был спорт?</label><?= choice_html('exercise', $yesNoOpts, $day, $readonly) ?></div>
-    <div data-show="exercise:1"><label class="title">Тип</label><?= chips_html('exercise_type', $exerciseTypeOpts, $day, $readonly) ?></div>
-    <div data-show="exercise:1"><label class="title">Длительность, минут</label><?= input_html('exercise_duration', 'number', $day, $readonly, 'минут', '1') ?></div>
-    <div data-show="exercise:1" class="full"><label class="title">Интенсивность</label><?= scale_html('exercise_intensity', $day, $readonly) ?></div>
-  </div>
-</div>
-
-<div class="section" data-show="day_type:work">
-  <div class="sh"><h2>Работа</h2><p>Не только часы, но и результат</p></div>
-  <div class="fields">
-    <div><label class="title">Время начала работы</label><?= input_html('work_start', 'time', $day, $readonly) ?></div>
-    <div><label class="title">Сфокусированная работа, часов</label><?= input_html('focused_work_hours', 'number', $day, $readonly, 'часов', '0.25') ?></div>
-    <div><label class="title">Общее рабочее время, часов</label><?= input_html('total_work_hours', 'number', $day, $readonly, 'часов', '0.25') ?></div>
-    <div><?= title_html('Результативность работы', $tips['work_result']) ?><?= scale_html('work_result', $day, $readonly) ?></div>
-    <div><?= title_html('Качество фокуса', $tips['focus_quality']) ?><?= scale_html('focus_quality', $day, $readonly) ?></div>
-    <div><label class="title">YouTube / развлечения</label><?= choice_html('youtube_time', $youtubeOpts, $day, $readonly) ?></div>
-  </div>
-</div>
-
-<div class="section" data-show="day_type:day_off">
-  <div class="sh"><h2>Работа</h2><p>На выходном тоже можно поработать</p></div>
-  <div class="fields">
-    <div class="full"><label class="title">Работал сегодня?</label><?= choice_html('dayoff_worked', $yesNoOpts, $day, $readonly, false) ?></div>
-    <div data-show="dayoff_worked:1"><label class="title">Сфокусированная работа, часов</label><?= input_html('dayoff_focused_hours', 'number', $day, $readonly, 'часов', '0.25', val($day, 'focused_work_hours')) ?></div>
-    <div data-show="dayoff_worked:1"><label class="title">Общее рабочее время, часов</label><?= input_html('dayoff_total_hours', 'number', $day, $readonly, 'часов', '0.25', val($day, 'total_work_hours')) ?></div>
-  </div>
-</div>
-
-<div class="section" data-show="day_type:work">
-  <div class="sh"><h2>Спады и отвлечения</h2><p>Что происходило, когда работать становилось тяжело</p></div>
-  <div class="fields">
-    <div><label class="title">Был заметный спад?</label><?= choice_html('had_dip', $yesNoOpts, $day, $readonly) ?></div>
-    <div data-show="had_dip:1"><label class="title">Что сделал при спаде?</label><?= select_html('dip_action', $dipActionOpts, $day, $readonly) ?></div>
-    <div data-show="had_dip:1"><label class="title">Вернулся к работе?</label><?= choice_html('returned_to_work', $yesNoOpts, $day, $readonly) ?></div>
-    <div class="full" data-show="had_dip:1"><label class="title">Почему отвлёкся?</label><?= select_html('distraction_reason', $distractionOpts, $day, $readonly) ?></div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="sh"><h2>🚀 Работа над будущим</h2><p>Действия, которые потенциально улучшают твою жизнь в перспективе, а не просто закрывают текущие обязательства.</p></div>
-  <div class="fields">
-    <div class="full"><label class="title">Занимался сегодня чем-то для будущего?</label><?= choice_html('future_work', $yesNoOpts, $day, $readonly, false) ?></div>
-    <div data-show="future_work:1">
-      <label class="title">Сколько времени?</label>
-      <div class="sleep-inline">
-        <div class="sleep-field">
-          <input type="number" name="future_work_hours" min="0" max="24" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($fwHoursPart) ?>">
-          <span class="unit">часов</span>
-        </div>
-        <div class="sleep-field">
-          <input type="number" name="future_work_minutes" min="0" max="59" step="1" placeholder="0" <?= $readonly ? 'disabled' : '' ?> value="<?= htmlspecialchars($fwMinutesPart) ?>">
-          <span class="unit">минут</span>
-        </div>
-      </div>
-    </div>
-    <div data-show="future_work:1"><?= title_html('Насколько это было значимо для будущего?', $tips['future_work_importance']) ?><?= scale_html('future_work_importance', $day, $readonly) ?></div>
-    <div class="full" data-show="future_work:1"><label class="title">Что делал?</label><?= input_html('future_work_note', 'text', $day, $readonly, 'Например: составлял финансовый план') ?></div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="sh"><h2>Вечер</h2><p>Финальная оценка дня</p></div>
-  <div class="fields">
-    <div><?= title_html('Энергия вечером', $tips['evening_energy']) ?><?= scale_html('evening_energy', $day, $readonly) ?></div>
-    <div><?= title_html('Готовность работать завтра', $tips['tomorrow_motivation']) ?><?= scale_html('tomorrow_motivation', $day, $readonly) ?></div>
-    <div data-show="day_type:work"><label class="title">Почему остановил работу?</label><?= select_html('work_stop_reason', $stopReasonOpts, $day, $readonly) ?></div>
-    <div class="full"><label class="title">Главный результат дня</label><?= input_html('main_result', 'text', $day, $readonly, 'Одним предложением: что сегодня реально продвинул?') ?></div>
-    <div class="full"><label class="title">Комментарий</label><textarea name="comment" placeholder="Что было необычного или что стоит учесть при анализе?" <?= $readonly ? 'disabled' : '' ?>><?= htmlspecialchars(val($day, 'comment')) ?></textarea></div>
-  </div>
-</div>
-
-<?php if (!$readonly): ?>
-<div class="actions">
-  <span class="muted" id="save-status">Ещё не сохранено</span>
-  <div>
-    <button class="btn" type="button" id="save-btn">Сохранить</button>
-    <button class="btn primary" type="button" id="complete-btn">Завершить день</button>
-  </div>
-</div>
-<div class="alert error hidden" id="error-box"></div>
-<?php endif; ?>
-
-</form>
-<footer class="footer">
-  <a href="<?= BASE_URL ?>/settings">Смена пароля</a>
-  <a href="<?= BASE_URL ?>/logout">Выйти</a>
-</footer>
-</main>
-</div>
-
-<script>
-window.APP = <?= json_encode([
-    'base' => BASE_URL,
-    'date' => $date,
-    'isToday' => $isToday,
-    'readonly' => $readonly,
-    'status' => $day['status'] ?? null,
-    'fields' => EDITABLE_COLUMNS,
-    'workFields' => WORK_FIELDS,
-], JSON_UNESCAPED_UNICODE) ?>;
-</script>
-<script src="<?= asset('js/app.js') ?>"></script>
-<script src="<?= asset('js/day.js') ?>"></script>
+    <script>
+        window.APP = <?= json_encode([
+                            'base' => BASE_URL,
+                            'date' => $date,
+                            'isToday' => $isToday,
+                            'readonly' => $readonly,
+                            'status' => $day['status'] ?? null,
+                            'fields' => EDITABLE_COLUMNS,
+                            'workFields' => WORK_FIELDS,
+                        ], JSON_UNESCAPED_UNICODE) ?>;
+    </script>
+    <script src="<?= asset('js/app.js') ?>"></script>
+    <script src="<?= asset('js/day.js') ?>"></script>
 </body>
+
 </html>
