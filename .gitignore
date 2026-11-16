@@ -13,6 +13,7 @@
 /data/password_hash.txt
 /data/password_hash.php
 /data/auth_secret.txt
+/data/api_token.txt
 
 # Automatic DB backups (database.php: backup_db)
 /data/backups/

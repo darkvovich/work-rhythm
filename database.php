@@ -220,6 +220,20 @@ function list_days(): array
     return db()->query('SELECT * FROM days ORDER BY date DESC')->fetchAll();
 }
 
+/**
+ * Возвращает список дней за указанный диапазон дат включительно.
+ *
+ * @param string $from Начальная дата диапазона (YYYY-MM-DD).
+ * @param string $to Конечная дата диапазона (YYYY-MM-DD).
+ * @return array Массив записей дней.
+ */
+function get_days_range(string $from, string $to): array
+{
+    $stmt = db()->prepare('SELECT * FROM days WHERE date >= ? AND date <= ? ORDER BY date ASC');
+    $stmt->execute([$from, $to]);
+    return $stmt->fetchAll();
+}
+
 function upsert_day(string $date, array $clean): void
 {
     $pdo = db();
@@ -248,6 +262,110 @@ function upsert_day(string $date, array $clean): void
         $sql = 'INSERT INTO days (' . implode(',', $cols) . ') VALUES (' . implode(',', $marks) . ')';
         $pdo->prepare($sql)->execute($vals);
     }
+}
+
+/**
+ * Частично обновляет указанные поля дня, не перезаписывая остальные поля в NULL.
+ * Если записи за указанную дату ещё нет, создаёт новый черновик.
+ *
+ * @param string $date Дата дня (YYYY-MM-DD).
+ * @param array $cleanFields Ассоциативный массив нормализованных полей.
+ * @return array Список колонок, которые были фактически обновлены.
+ */
+function patch_day_fields(string $date, array $cleanFields): array
+{
+    $pdo = db();
+    $now = date('Y-m-d H:i:s');
+    $existing = get_day($date);
+
+    $validCols = [];
+    $vals = [];
+
+    foreach ($cleanFields as $col => $val) {
+        if (!in_array($col, EDITABLE_COLUMNS, true)) {
+            continue;
+        }
+        $validCols[] = $col;
+        $vals[] = $val;
+    }
+
+    if (empty($validCols)) {
+        return [];
+    }
+
+    if ($existing !== null) {
+        $sets = [];
+        foreach ($validCols as $col) {
+            $sets[] = "$col = ?";
+        }
+        $sets[] = 'updated_at = ?';
+        $vals[] = $now;
+        $vals[] = $date;
+
+        $sql = 'UPDATE days SET ' . implode(', ', $sets) . ' WHERE date = ?';
+        $pdo->prepare($sql)->execute($vals);
+    } else {
+        $cols = ['date', 'status', 'created_at', 'updated_at'];
+        $marks = ['?', '?', '?', '?'];
+        $insertVals = [$date, 'draft', $now, $now];
+
+        foreach ($validCols as $i => $col) {
+            $cols[] = $col;
+            $marks[] = '?';
+            $insertVals[] = $vals[$i];
+        }
+
+        $sql = 'INSERT INTO days (' . implode(',', $cols) . ') VALUES (' . implode(',', $marks) . ')';
+        $pdo->prepare($sql)->execute($insertVals);
+    }
+
+    return $validCols;
+}
+
+/**
+ * Нормализует значение отдельного поля в соответствии с его типом и допустимыми значениями.
+ *
+ * @param string $field Имя поля из EDITABLE_COLUMNS.
+ * @param mixed $v Исходное значение из запроса.
+ * @return mixed Приведённое значение или null.
+ */
+function normalize_field_value(string $field, $v)
+{
+    if (in_array($field, SCALE_FIELDS, true)) {
+        return scale_or_null($v);
+    }
+    if (in_array($field, BOOL_FIELDS, true)) {
+        return bool_or_null($v);
+    }
+    if (in_array($field, FLOAT_FIELDS, true)) {
+        return float_or_null($v);
+    }
+    if (in_array($field, INT_FIELDS, true)) {
+        return int_or_null($v);
+    }
+    if (in_array($field, TIME_FIELDS, true)) {
+        return time_or_null($v);
+    }
+    if ($field === 'exercise_type') {
+        return exercise_type_or_null($v);
+    }
+    if ($field === 'day_type') {
+        return in_array($v, ['work', 'day_off'], true) ? $v : null;
+    }
+    if ($field === 'time_outside') {
+        return in_array($v, TIME_OUTSIDE_VALUES, true) ? $v : null;
+    }
+    if ($field === 'youtube_time') {
+        return in_array($v, YOUTUBE_VALUES, true) ? $v : null;
+    }
+    if (in_array($field, TEXT_FIELDS, true)) {
+        if (!is_string($v)) {
+            return null;
+        }
+        $s = trim($v);
+        return $s === '' ? null : $s;
+    }
+    return null;
 }
 
 function mark_completed(string $date): void

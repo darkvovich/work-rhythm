@@ -49,6 +49,15 @@ function Call($method, $path, $json) {
     try { return Invoke-WebRequest @p } catch { return $null }
 }
 
+# Запрос к Service REST API с Bearer-токеном
+function CallApi($method, $path, $token, $json) {
+    $headers = @{}
+    if ($token) { $headers['Authorization'] = "Bearer $token" }
+    $p = @{ Uri = $script:base + $path; Method = $method; Headers = $headers; UseBasicParsing = $true; SkipHttpErrorCheck = $true; TimeoutSec = 15 }
+    if ($null -ne $json) { $p.Body = [System.Text.Encoding]::UTF8.GetBytes($json); $p.ContentType = 'application/json; charset=utf-8' }
+    try { return Invoke-WebRequest @p } catch { return $null }
+}
+
 try {
     Write-Output "stage: starting server on $base"
     $srv = Start-Process -FilePath $php -ArgumentList "-S 127.0.0.1:$port -t `"$tmp`" `"$router`"" -WindowStyle Hidden -PassThru -RedirectStandardOutput $srvOut -RedirectStandardError $srvErr
@@ -136,6 +145,75 @@ try {
 
         $r = Call Post '/api/reopen-day' ('{"date":"2000-01-01"}')
         Check 'reopen missing day -> 409' ($r -and $r.StatusCode -eq 409) ("status=" + (Code $r))
+
+        Write-Output 'stage: service api v1 - auth'
+        $r = CallApi Get '/api/v1/ping' $null $null
+        Check 'api auth: missing token -> 401' ($r -and $r.StatusCode -eq 401) ("status=" + (Code $r))
+
+        $r = CallApi Get '/api/v1/ping' 'invalid_token_123' $null
+        Check 'api auth: invalid token -> 401' ($r -and $r.StatusCode -eq 401) ("status=" + (Code $r))
+
+        # Читаем или генерируем сервисный токен из временной копии
+        $tokenFile = Join-Path $tmp 'data\api_token.txt'
+        if (-not (Test-Path $tokenFile)) {
+            & $php (Join-Path $tmp 'get_api_token.php') | Out-Null
+        }
+        $apiToken = (Get-Content $tokenFile -Raw).Trim()
+
+        $r = CallApi Get '/api/v1/ping' $apiToken $null
+        Check 'api ping -> 200' ($r -and $r.StatusCode -eq 200 -and $r.Content -match '"service":\s*"work-rhythm-api"') ("status=" + (Code $r))
+
+        Write-Output 'stage: service api v1 - day & range'
+        $r = CallApi Get ('/api/v1/day?date=' + $date) $apiToken $null
+        Check 'api get existing day -> 200' ($r -and $r.StatusCode -eq 200 -and $r.Content -match '"exists":\s*true') ("status=" + (Code $r))
+
+        $r = CallApi Get '/api/v1/day?date=2099-01-01' $apiToken $null
+        Check 'api get missing day -> 200 exists:false' ($r -and $r.StatusCode -eq 200 -and $r.Content -match '"exists":\s*false') ("status=" + (Code $r))
+
+        $r = CallApi Get '/api/v1/day?date=bad-date' $apiToken $null
+        Check 'api get bad date -> 400' ($r -and $r.StatusCode -eq 400) ("status=" + (Code $r))
+
+        $r = CallApi Get '/api/v1/range?from=2026-09-01&to=2026-09-30' $apiToken $null
+        Check 'api range -> 200' ($r -and $r.StatusCode -eq 200 -and $r.Content -match '"count":') ("status=" + (Code $r))
+
+        $r = CallApi Get '/api/v1/range?from=2026-09-30&to=2026-09-01' $apiToken $null
+        Check 'api range from > to -> 400' ($r -and $r.StatusCode -eq 400) ("status=" + (Code $r))
+
+        Write-Output 'stage: service api v1 - patch & sync-work'
+        $patchDate = '2026-09-18'
+        $initDraft = '{"date":"' + $patchDate + '","fields":{"sleep_hours":8.0,"morning_energy":5,"day_readiness":4}}'
+        $r = CallApi Post '/api/v1/day' $apiToken $initDraft
+        Check 'api patch initial draft -> 200' ($r -and $r.StatusCode -eq 200) ("status=" + (Code $r))
+
+        # Частичное обновление: только рабочие часы, сон и энергия должны сохраниться!
+        $patchWork = '{"date":"' + $patchDate + '","fields":{"work_start":"10:00","total_work_hours":6.5,"focused_work_hours":5.0}}'
+        $r = CallApi Post '/api/v1/day' $apiToken $patchWork
+        Check 'api patch only work fields -> 200' ($r -and $r.StatusCode -eq 200) ("status=" + (Code $r))
+
+        # Проверяем через GET, что sleep_hours=8.0 и morning_energy=5 остались нетронутыми
+        $r = CallApi Get ('/api/v1/day?date=' + $patchDate) $apiToken $null
+        $dayJson = if ($r) { $r.Content | ConvertFrom-Json } else { $null }
+        $sleepIntact = ($dayJson -and $dayJson.day.sleep_hours -eq 8.0 -and $dayJson.day.morning_energy -eq 5)
+        $workUpdated = ($dayJson -and $dayJson.day.total_work_hours -eq 6.5 -and $dayJson.day.focused_work_hours -eq 5.0)
+        Check 'api patch preserved untouched fields' ($sleepIntact -and $workUpdated) ("sleep=" + $dayJson.day.sleep_hours + " work=" + $dayJson.day.total_work_hours)
+
+        # Будущие даты -> 403
+        $r = CallApi Post '/api/v1/day' $apiToken '{"date":"2099-01-01","fields":{"total_work_hours":5.0}}'
+        Check 'api patch future date -> 403' ($r -and $r.StatusCode -eq 403) ("status=" + (Code $r))
+
+        # Завершаем день и проверяем конфликт 409 без force
+        $r = Call Post '/api/complete-day' ('{"date":"' + $patchDate + '","day_type":"work","bed_time":"23:00","wake_time":"07:00","sleep_hours":"8","sleep_quality":"5","morning_energy":"5","day_readiness":"4","left_home":"0","exercise":"0","focused_work_hours":"5","work_result":"4"}')
+        $r = CallApi Post '/api/v1/day' $apiToken ('{"date":"' + $patchDate + '","fields":{"total_work_hours":7.0},"force":false}')
+        Check 'api patch completed without force -> 409' ($r -and $r.StatusCode -eq 409) ("status=" + (Code $r))
+
+        # Обновление завершенного дня с force=true -> 200
+        $r = CallApi Post '/api/v1/day' $apiToken ('{"date":"' + $patchDate + '","fields":{"total_work_hours":7.0},"force":true}')
+        Check 'api patch completed with force=true -> 200' ($r -and $r.StatusCode -eq 200) ("status=" + (Code $r))
+
+        # sync-work шорткат -> 200
+        $syncJson = '{"date":"' + $patchDate + '","work_start":"09:30","total_work_hours":8.0,"focused_work_hours":6.0,"main_result":"CRM sync ok","force":true}'
+        $r = CallApi Post '/api/v1/sync-work' $apiToken $syncJson
+        Check 'api sync-work -> 200' ($r -and $r.StatusCode -eq 200) ("status=" + (Code $r))
 
         Write-Output ("total=" + $script:total + " failed=" + $script:fail)
         if ($script:fail -gt 0) { $exitCode = 1 }

@@ -7,12 +7,13 @@
 
 ## Ключевые файлы
 
-* `config.php` — `APP_ROOT/DATA_DIR/DB_PATH/LOG_DIR`, `APP_USER`, `AUTH_COOKIE/LIFETIME`, `BASE_URL`, `PASSWORD_HASH`, `auth_secret()/rotate_auth_secret()`, `write_log()`, `asset()`, `ico()`.
+* `config.php` — `APP_ROOT/DATA_DIR/DB_PATH/LOG_DIR`, `APP_USER`, `AUTH_COOKIE/LIFETIME`, `BASE_URL`, `PASSWORD_HASH`, `auth_secret()/rotate_auth_secret()`, `api_service_token()/rotate_api_service_token()`, `write_log()`, `asset()`, `ico()`.
 * `auth.php` — `make_auth_token/verify_auth_token/is_logged_in/require_login/login_user/do_logout`. Токен: `b64url(payload).b64url(HMAC-SHA256, auth_secret)`.
-* `database.php` — единственный доступ к БД через `db()`. Константы полей `SCALE/BOOL/FLOAT/INT/TIME/TEXT_FIELDS`, `EXERCISE_TYPES`, `EDITABLE_COLUMNS`, `WORK_FIELDS`. Функции `normalize_day → apply_conditional_clear`, `exercise_type_or_null` (мультивыбор через `,`), `required_errors`, `upsert_day`, `mark_completed`, `mark_reopened`, `backup_db/prune_backups`, `migrate_schema`.
+* `database.php` — единственный доступ к БД через `db()`. Константы полей `SCALE/BOOL/FLOAT/INT/TIME/TEXT_FIELDS`, `EXERCISE_TYPES`, `EDITABLE_COLUMNS`, `WORK_FIELDS`. Функции `normalize_day → apply_conditional_clear`, `normalize_field_value`, `exercise_type_or_null` (мультивыбор через `,`), `required_errors`, `upsert_day`, `patch_day_fields`, `get_days_range`, `mark_completed`, `mark_reopened`, `backup_db/prune_backups`, `migrate_schema`.
 * Страницы: `index.php` (форма дня), `history.php`, `analytics.php` (avg/sum/pairs/pearson), `export.php` (CSV `;` + BOM), `login/logout/set_password (/settings)`.
 * `migrate.php` (`/migrate`) — ручная миграция схемы: показывает недостающие колонки, кнопку запуска, список бэкапов. `migration_banner()` из `database.php` выводит ссылку на неё на странице «Сегодня», если миграция нужна.
-* API: `api/save_day.php`, `api/complete_day.php`, `api/reopen_day.php`, `api/get_day.php`, `api/get_history.php`.
+* API веб-сессий: `api/save_day.php`, `api/complete_day.php`, `api/reopen_day.php`, `api/get_day.php`, `api/get_history.php`.
+* Сервисный REST API v1 (M2M / Bearer token): `api/v1/index.php` (эндпоинты `ping`, `day` [GET/PATCH], `range`, `sync-work`), CLI-хелпер `get_api_token.php`.
 * Фронт: `assets/js/day.js` (форма, автосейв), `assets/js/analytics.js` (графики), `assets/js/app.js` (общее: `postJSON`, подсказки).
 * Тесты: `tests/unit.php` (чистые функции), `tests/e2e.ps1` (HTTP на копии проекта), `tests/router.php` (ЧПУ для `php -S`).
 * Роутинг/защита: корневой `.htaccess` (ЧПУ + `Deny` для `data/|logs/|*.sqlite|config|database|auth.php`), `data/.htaccess` + `logs/.htaccess` (`Require all denied`).
@@ -32,7 +33,7 @@
 
 ## Секреты — никогда в git
 
-Запрещено коммитить (уже в `.gitignore`): `data/tracker.sqlite`, `data/*.db*`, `data/password_hash.*`, `data/auth_secret.txt`, `data/backups/`, `logs/*.log`, `*.csv`.
+Запрещено коммитить (уже в `.gitignore`): `data/tracker.sqlite`, `data/*.db*`, `data/password_hash.*`, `data/auth_secret.txt`, `data/api_token.txt`, `data/backups/`, `logs/*.log`, `*.csv`.
 Дефолтный `PASSWORD_HASH` в `config.php` — публичный хеш слова `password` для первого запуска; реальный хеш создаётся через `/settings` или `php set_password.php <пароль>` (он же ротирует секрет и инвалидирует cookie).
 
 ## Как проверять

@@ -80,6 +80,47 @@ function rotate_auth_secret(): void
     file_put_contents(DATA_DIR . DIRECTORY_SEPARATOR . 'auth_secret.txt', bin2hex(random_bytes(32)));
 }
 
+/**
+ * Возвращает сервисный Bearer-токен для Machine-to-Machine REST API.
+ * Если файл data/api_token.txt отсутствует, генерирует криптостойкий 64-символьный hex-токен.
+ *
+ * @return string Сервисный API-токен.
+ */
+function api_service_token(): string
+{
+    $file = DATA_DIR . DIRECTORY_SEPARATOR . 'api_token.txt';
+    if (is_file($file)) {
+        $token = trim((string) @file_get_contents($file));
+        if ($token !== '') {
+            return $token;
+        }
+    }
+    if (!is_dir(DATA_DIR)) {
+        @mkdir(DATA_DIR, 0775, true);
+    }
+    $token = bin2hex(random_bytes(32));
+    @file_put_contents($file, $token);
+    @chmod($file, 0600);
+    return $token;
+}
+
+/**
+ * Принудительно перегенерирует сервисный Bearer-токен API и сохраняет в data/api_token.txt.
+ *
+ * @return string Новый 64-символьный hex-токен.
+ */
+function rotate_api_service_token(): string
+{
+    if (!is_dir(DATA_DIR)) {
+        @mkdir(DATA_DIR, 0775, true);
+    }
+    $file = DATA_DIR . DIRECTORY_SEPARATOR . 'api_token.txt';
+    $token = bin2hex(random_bytes(32));
+    file_put_contents($file, $token);
+    @chmod($file, 0600);
+    return $token;
+}
+
 // Дозаписывает запись в файл лога вида Y-m-d-<name>.log
 function write_log(string $name, array $entry): void
 {

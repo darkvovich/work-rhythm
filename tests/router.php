@@ -20,7 +20,10 @@ $map = [
     '/migrate' => '/migrate.php',
 ];
 
-if (preg_match('#^/day/(\d{4}-\d{2}-\d{2})$#', $path, $m)) {
+if (preg_match('#^/api/v1/([a-zA-Z0-9_-]+)$#', $path, $m)) {
+    $target = '/api/v1/index.php';
+    $_GET['action'] = $m[1];
+} elseif (preg_match('#^/day/(\d{4}-\d{2}-\d{2})$#', $path, $m)) {
     $target = '/index.php';
     $_GET['date'] = $m[1];
 } elseif (isset($map[$path])) {

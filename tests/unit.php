@@ -73,5 +73,18 @@ $e = required_errors($mkWork(['exercise' => 1]));
 check('exercise_type required when exercise', in_array('Заполните: Тип спорта', $e, true), true);
 check('exercise_duration required when exercise', in_array('Заполните: Длительность спорта', $e, true), true);
 
+// --- Нормализация полей (normalize_field_value) ---
+check('normalize scale valid', normalize_field_value('sleep_quality', '4'), 4);
+check('normalize scale invalid', normalize_field_value('sleep_quality', '6'), null);
+check('normalize float valid', normalize_field_value('total_work_hours', '6.5'), 6.5);
+check('normalize float invalid', normalize_field_value('total_work_hours', 'abc'), null);
+check('normalize time valid', normalize_field_value('work_start', '10:30'), '10:30');
+check('normalize time invalid', normalize_field_value('work_start', '25:99'), null);
+check('normalize bool valid', normalize_field_value('left_home', 1), 1);
+check('normalize bool invalid', normalize_field_value('left_home', 'yes'), null);
+check('normalize text valid', normalize_field_value('main_result', '  Релиз API  '), 'Релиз API');
+check('normalize text empty', normalize_field_value('main_result', '   '), null);
+check('normalize exercise_type', normalize_field_value('exercise_type', ['Бег', 'Йога']), 'Бег,Йога');
+
 echo $fail === 0 ? "ALL PASS\n" : "$fail FAILED\n";
 exit($fail === 0 ? 0 : 1);

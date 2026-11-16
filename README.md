@@ -84,3 +84,13 @@ php -S localhost:8000 -t .
 * `POST api/complete-day` — валидация + `status=completed`.
 * `POST api/reopen-day` — снять «Завершён» (`status=draft`, `completed_at=NULL`), только для уже завершённого дня.
 * `GET api/get-day?date=YYYY-MM-DD`, `GET api/get-history` — чтение.
+
+## Сервисный REST API v1 (M2M)
+
+Межсервисный программный интерфейс для интеграции со сторонними системами (CRM of Everything, Weeek, Telegram-боты). Аутентификация через заголовок `Authorization: Bearer <TOKEN>`. Токен хранится в `data/api_token.txt`, просмотр и сброс доступны в `/settings` или CLI `php get_api_token.php`.
+
+* `GET /api/v1/ping` — проверка доступности сервиса и валидности токена.
+* `GET /api/v1/day?date=YYYY-MM-DD` — получение данных одного дня (сон, спорт, работа, статус, метаданные).
+* `GET /api/v1/range?from=YYYY-MM-DD&to=YYYY-MM-DD` — выборка дней за период (до 90 дней) для сквозной аналитики.
+* `PATCH /api/v1/day` — частичное обновление полей дня (не затирает остальные поля в NULL; для завершённого дня требует `force: true`).
+* `POST /api/v1/sync-work` — специализированный шорткат для быстрой синхронизации рабочего времени (`total_work_hours`, `focused_work_hours`, `work_start`, `main_result`).
