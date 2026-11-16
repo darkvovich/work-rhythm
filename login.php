@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!doctype html>
-<html lang="ru">
+<html lang="ru"<?= theme_html_class() !== '' ? ' class="' . theme_html_class() . '"' : '' ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="apple-touch-icon" href="<?= BASE_URL ?>/assets/apple-touch-icon.png">
 <link rel="manifest" href="<?= BASE_URL ?>/manifest.json">
 <meta name="theme-color" content="#20242b">
+<?= theme_inline_script() ?>
 <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
 <body class="login-body">
@@ -46,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <input type="password" id="password" name="password" autocomplete="current-password" required>
     <button type="submit" class="btn primary login-btn">Войти</button>
   </form>
+  <div class="login-theme">
+    <?= theme_switch_html() ?>
+  </div>
 </div>
+<script src="<?= asset('js/app.js') ?>"></script>
 </body>
 </html>

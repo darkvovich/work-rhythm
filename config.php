@@ -109,7 +109,60 @@ function ico(string $name): string
         'export' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
         'lock' => '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
         'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+        'sun' => '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+        'moon' => '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+        'auto' => '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
     ];
     $inner = $paths[$name] ?? '';
     return '<svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $inner . '</svg>';
+}
+
+/**
+ * Возвращает CSS-класс темы для тега <html> на основе cookie wr_theme.
+ *
+ * @return string Класс темы: 'theme-dark', 'theme-light' или пустая строка для auto.
+ */
+function theme_html_class(): string
+{
+    $theme = $_COOKIE['wr_theme'] ?? 'auto';
+    if ($theme === 'dark') {
+        return 'theme-dark';
+    }
+    if ($theme === 'light') {
+        return 'theme-light';
+    }
+    return '';
+}
+
+/**
+ * Возвращает инлайн-скрипт для применения темы до рендера страницы (предотвращение мигания белым).
+ *
+ * @return string HTML-тег <script> с кодом проверки localStorage и prefers-color-scheme.
+ */
+function theme_inline_script(): string
+{
+    return '<script>'
+        . '(function(){'
+        . 'try{'
+        . 'var t=localStorage.getItem("wr_theme")||"auto";'
+        . 'var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;'
+        . 'if(t==="dark"||(t==="auto"&&m)){document.documentElement.classList.add("theme-dark");}'
+        . 'else if(t==="light"){document.documentElement.classList.add("theme-light");}'
+        . '}catch(e){}'
+        . '})();'
+        . '</script>';
+}
+
+/**
+ * Возвращает HTML-разметку кнопок переключения темы (Светлая / Авто / Тёмная).
+ *
+ * @return string HTML-разметка блока переключателя.
+ */
+function theme_switch_html(): string
+{
+    return '<div class="theme-switch" role="group" aria-label="Выбор темы">'
+        . '<button type="button" class="theme-btn" data-theme-val="light" title="Светлая тема" aria-label="Светлая тема">' . ico('sun') . '<span class="theme-label">Светлая</span></button>'
+        . '<button type="button" class="theme-btn" data-theme-val="auto" title="Системная тема" aria-label="Системная тема">' . ico('auto') . '<span class="theme-label">Авто</span></button>'
+        . '<button type="button" class="theme-btn" data-theme-val="dark" title="Тёмная тема" aria-label="Тёмная тема">' . ico('moon') . '<span class="theme-label">Тёмная</span></button>'
+        . '</div>';
 }

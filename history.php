@@ -17,7 +17,7 @@ $draftDays = $totalDays - $completedDays;
 $active = 'history';
 ?>
 <!doctype html>
-<html lang="ru">
+<html lang="ru"<?= theme_html_class() !== '' ? ' class="' . theme_html_class() . '"' : '' ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -27,6 +27,7 @@ $active = 'history';
 <link rel="apple-touch-icon" href="<?= BASE_URL ?>/assets/apple-touch-icon.png">
 <link rel="manifest" href="<?= BASE_URL ?>/manifest.json">
 <meta name="theme-color" content="#20242b">
+<?= theme_inline_script() ?>
 <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
 <body>
@@ -39,6 +40,7 @@ $active = 'history';
     <a href="<?= BASE_URL ?>/analytics"><?= ico('analytics') ?><span class="nav-label">Аналитика</span></a>
     <a href="<?= BASE_URL ?>/export"><?= ico('export') ?><span class="nav-label">Экспорт</span></a>
   </nav>
+  <?= theme_switch_html() ?>
 </aside>
 
 <main>

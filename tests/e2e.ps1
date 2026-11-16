@@ -1,4 +1,5 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
 # HTTP E2E прогон. Проект КОПИРУЕТСЯ во временную папку, сервер поднимается там же:
 # реальные data/ и logs/ проекта не затрагиваются никогда.
 # Требования: php в PATH, PowerShell 5.1+, свободный порт 8120-8199.
